@@ -51,7 +51,6 @@ export class Runner {
     const options = { includeDependencies: false, includeElectron: false };
     const { currentElectronVersion } = this.appState;
     const { version, localPath } = currentElectronVersion;
-
     if (this.appState.isClearingConsoleOnRun) {
       this.appState.clearConsole();
     }
@@ -97,6 +96,7 @@ export class Runner {
   public async stop() {
     if (this.child) {
       this.child.kill();
+      this.child = null;
       this.appState.isRunning = false;
     }
   }
@@ -231,6 +231,9 @@ export class Runner {
     // Add user-specified cli flags if any have been set.
     const options = [dir, '--inspect'].concat(this.appState.executionFlags);
 
+    // Prevent spawning duplicate fiddle instances
+    this.stop();
+
     this.child = spawn(binaryPath, options, { cwd: dir, env });
     this.appState.isRunning = true;
     pushOutput(`Electron v${version} started.`);
@@ -247,7 +250,6 @@ export class Runner {
 
       pushOutput(`Electron exited${withCode}`);
       this.appState.isRunning = false;
-      this.child = null;
 
       // Clean older folders
       await window.ElectronFiddle.app.fileManager.cleanup(dir);
